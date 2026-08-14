@@ -73,6 +73,11 @@ class PhrasesActivity : AppCompatActivity() {
             row.phraseEnabled.setOnCheckedChangeListener(null)
             row.phraseEnabled.isChecked = phrase.enabled
             row.phraseEnabled.setOnCheckedChangeListener { _, checked ->
+                if (!checked && wouldDropBelowFloor(index)) {
+                    row.phraseEnabled.isChecked = true // 撤销这次点击
+                    toast(getString(R.string.phrase_too_few, PhrasePicker.NO_REPEAT_WINDOW + 1))
+                    return@setOnCheckedChangeListener
+                }
                 items[index] = items[index].copy(enabled = checked)
                 persist()
                 render()
@@ -117,8 +122,15 @@ class PhrasesActivity : AppCompatActivity() {
             toast(getString(R.string.phrase_duplicate))
             return@promptText
         }
+        val oldText = items[index].text
         items[index] = items[index].copy(text = text)
         persist()
+
+        // "最近用过"是按话术文字内容匹配的（不是靠稳定 ID）。
+        // 改措辞而不同步这份历史，会让这条话术的"最近用过"状态被静默清空，
+        // 下一次抽取就可能立刻抽到它，违反"连续 8 次不重复"的承诺。
+        store.recentPhrases = store.recentPhrases.map { if (it == oldText) text else it }
+
         render()
     }
 
@@ -145,6 +157,10 @@ class PhrasesActivity : AppCompatActivity() {
     }
 
     private fun confirmDelete(index: Int) {
+        if (items[index].enabled && wouldDropBelowFloor(index)) {
+            toast(getString(R.string.phrase_too_few, PhrasePicker.NO_REPEAT_WINDOW + 1))
+            return
+        }
         AlertDialog.Builder(this)
             .setMessage(getString(R.string.phrase_delete_confirm, items[index].text))
             .setNegativeButton(R.string.cancel, null)
@@ -154,6 +170,21 @@ class PhrasesActivity : AppCompatActivity() {
                 render()
             }
             .show()
+    }
+
+    /**
+     * 这一条如果被禁用/删除，参与随机的条数会不会跌破硬下限。
+     *
+     * 这是真正的拦截，不是文字警告 —— 之前的版本只在 render() 里显示红字，
+     * 任何操作都能把可用条目降到窗口以下，下一次抽话术时会在
+     * PhrasePicker.pick() 里崩溃，而且是在 onResume 无条件触发的路径上，
+     * 导致应用直接打不开。
+     */
+    private fun wouldDropBelowFloor(index: Int): Boolean {
+        val enabledCount = items.count { it.enabled }
+        val thisOneCounted = items[index].enabled
+        val afterChange = if (thisOneCounted) enabledCount - 1 else enabledCount
+        return afterChange <= PhrasePicker.NO_REPEAT_WINDOW
     }
 
     private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()

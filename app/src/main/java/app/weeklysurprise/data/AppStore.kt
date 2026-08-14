@@ -112,17 +112,20 @@ class AppStore(context: Context) {
             val raw = prefs.getString(KEY_PLAN, null) ?: return emptyList()
             val all = phrases.map { it.text }
             val array = JSONArray(raw)
-            return (0 until array.length()).map { i ->
+            // 越界下标就丢弃这一条，而不是拿"第一条话术"顶替 ——
+            // 顶替会让排期显示一句从未被抽中过的话，看着像正确数据，其实是编出来的。
+            // recentPhrases 迁移用的是同一套"丢弃"策略，两处保持一致。
+            return (0 until array.length()).mapNotNull { i ->
                 val o = array.getJSONObject(i)
+                val phrase = when (val p = o.get("phrase")) {
+                    is Int -> all.getOrNull(p) // 旧格式：下标
+                    else -> p.toString()
+                } ?: return@mapNotNull null
+
                 Reminder(
                     date = LocalDate.parse(o.getString("date")),
                     amountYuan = o.getInt("amount"),
-                    // 旧格式里 phrase 是下标（整数），这里就地换算成原文，
-                    // 免得升级后已排好的提醒丢失内容。
-                    phrase = when (val p = o.get("phrase")) {
-                        is Int -> all.getOrElse(p) { all.firstOrNull().orEmpty() }
-                        else -> p.toString()
-                    },
+                    phrase = phrase,
                 )
             }
         }

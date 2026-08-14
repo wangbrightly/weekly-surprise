@@ -2,6 +2,7 @@ package app.weeklysurprise.data
 
 import app.weeklysurprise.calendar.CalendarGateway
 import app.weeklysurprise.core.HistoryEntry
+import app.weeklysurprise.core.PhrasePicker
 import app.weeklysurprise.core.Reminder
 import app.weeklysurprise.core.ReminderCoordinator
 import app.weeklysurprise.core.ReminderFactory
@@ -43,6 +44,13 @@ class PlanService(
     fun topUp(today: LocalDate, random: Random = Random.Default): Int {
         val calendarId = store.calendarId
         if (calendarId < 0) return 0
+
+        // 防线之二：话术库管理页会在 UI 层拦住"降到底线以下"的操作，
+        // 但这里再守一道 —— 万一那道拦截被绕过（未来的代码改动、
+        // 或直接改动本地存储），也不能让 PhrasePicker.pick() 的
+        // require() 在 onResume 无条件触发的路径上把整个应用崩掉。
+        // 在这里提前退出，不写日历，避免日历事件和本地排期错位。
+        if (store.enabledPhrases.size <= PhrasePicker.NO_REPEAT_WINDOW) return 0
 
         val settings = store.settings
         val newDates = ReminderCoordinator(gateway).topUp(calendarId, today, settings, random)
