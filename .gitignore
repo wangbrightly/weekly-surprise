@@ -1,0 +1,23 @@
+# 本机 SDK 绝对路径，含用户名，不入库
+local.properties
+
+# 构建产物
+build/
+.gradle/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# 签名密钥，绝不能进仓库
+*.jks
+*.keystore
+keystore.properties
+
+# IDE
+.idea/
+*.iml
+.cxx/
+
+# macOS
+.DS_Store
