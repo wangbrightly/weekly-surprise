@@ -2,6 +2,7 @@ package app.weeklysurprise.data
 
 import android.content.Context
 import app.weeklysurprise.core.HistoryEntry
+import app.weeklysurprise.core.Phrase
 import app.weeklysurprise.core.Phrases
 import app.weeklysurprise.core.Reminder
 import app.weeklysurprise.core.Settings
@@ -22,6 +23,30 @@ import java.time.LocalDate
 class AppStore(context: Context) {
 
     private val prefs = context.getSharedPreferences("weekly_surprise", Context.MODE_PRIVATE)
+
+    init {
+        migrateIfNeeded()
+    }
+
+    /**
+     * 把旧格式（话术存下标）就地转成新格式（话术存原文）。
+     *
+     * 必须在启动时立即完成并落盘，不能等到"读的时候现算"——
+     * 因为一旦用户先编辑了话术库，库里条目的下标就全变了，
+     * 此时再拿旧下标去查新库，会静默换算出**另一句话**。
+     * 换算本身没错，错在时机：必须赶在任何编辑之前。
+     */
+    private fun migrateIfNeeded() {
+        if (prefs.getInt(KEY_SCHEMA, 1) >= SCHEMA_VERSION) return
+
+        // 读取会自动按旧格式换算，写回则以新格式落盘
+        val migratedPlan = plan
+        val migratedRecent = recentPhrases
+
+        prefs.edit().putInt(KEY_SCHEMA, SCHEMA_VERSION).apply()
+        plan = migratedPlan
+        recentPhrases = migratedRecent
+    }
 
     // ---------- 设置 ----------
 
@@ -46,16 +71,38 @@ class AppStore(context: Context) {
 
     // ---------- 话术库 ----------
 
-    var phrases: List<String>
+    /**
+     * 全部话术（含已停用的）。
+     *
+     * 兼容旧格式：早期版本存的是纯字符串数组，读到那种格式时全部视为启用。
+     */
+    var phrases: List<Phrase>
         get() {
-            val raw = prefs.getString(KEY_PHRASES, null) ?: return Phrases.BUILT_IN
-            return JSONArray(raw).let { array ->
-                (0 until array.length()).map { array.getString(it) }
-            }
+            val raw = prefs.getString(KEY_PHRASES, null)
+                ?: return Phrases.BUILT_IN.map { Phrase(it) }
+            val array = JSONArray(raw)
+            return (0 until array.length()).mapNotNull { i ->
+                when (val item = array.get(i)) {
+                    is String -> Phrase(item, enabled = true) // 旧格式
+                    is JSONObject -> Phrase(
+                        text = item.optString("text"),
+                        enabled = item.optBoolean("enabled", true),
+                    )
+                    else -> null
+                }
+            }.filter { it.text.isNotBlank() }
         }
-        set(value) = prefs.edit()
-            .putString(KEY_PHRASES, JSONArray(value).toString())
-            .apply()
+        set(value) {
+            val array = JSONArray()
+            value.filter { it.text.isNotBlank() }.distinctBy { it.text }.forEach {
+                array.put(JSONObject().put("text", it.text).put("enabled", it.enabled))
+            }
+            prefs.edit().putString(KEY_PHRASES, array.toString()).apply()
+        }
+
+    /** 参与随机的话术原文。 */
+    val enabledPhrases: List<String>
+        get() = phrases.filter { it.enabled }.map { it.text }
 
     // ---------- 排期 ----------
 
@@ -63,13 +110,19 @@ class AppStore(context: Context) {
     var plan: List<Reminder>
         get() {
             val raw = prefs.getString(KEY_PLAN, null) ?: return emptyList()
+            val all = phrases.map { it.text }
             val array = JSONArray(raw)
             return (0 until array.length()).map { i ->
                 val o = array.getJSONObject(i)
                 Reminder(
                     date = LocalDate.parse(o.getString("date")),
                     amountYuan = o.getInt("amount"),
-                    phraseIndex = o.getInt("phrase"),
+                    // 旧格式里 phrase 是下标（整数），这里就地换算成原文，
+                    // 免得升级后已排好的提醒丢失内容。
+                    phrase = when (val p = o.get("phrase")) {
+                        is Int -> all.getOrElse(p) { all.firstOrNull().orEmpty() }
+                        else -> p.toString()
+                    },
                 )
             }
         }
@@ -80,18 +133,25 @@ class AppStore(context: Context) {
                     JSONObject()
                         .put("date", r.date.toString())
                         .put("amount", r.amountYuan)
-                        .put("phrase", r.phraseIndex),
+                        .put("phrase", r.phrase),
                 )
             }
             prefs.edit().putString(KEY_PLAN, array.toString()).apply()
         }
 
-    /** 已用过的话术下标，用于跨批次维持不重复。只保留最近若干条。 */
-    var recentPhrases: List<Int>
+    /** 已用过的话术原文，用于跨批次维持不重复。只保留最近若干条。 */
+    var recentPhrases: List<String>
         get() {
             val raw = prefs.getString(KEY_RECENT, null) ?: return emptyList()
+            val all = phrases.map { it.text }
             val array = JSONArray(raw)
-            return (0 until array.length()).map { array.getInt(it) }
+            return (0 until array.length()).mapNotNull { i ->
+                when (val item = array.get(i)) {
+                    is Int -> all.getOrNull(item) // 旧格式：下标
+                    is String -> item
+                    else -> null
+                }
+            }
         }
         set(value) = prefs.edit()
             .putString(KEY_RECENT, JSONArray(value.takeLast(RECENT_KEEP)).toString())
@@ -108,7 +168,7 @@ class AppStore(context: Context) {
                 HistoryEntry(
                     date = LocalDate.parse(o.getString("date")),
                     amountYuan = o.getInt("amount"),
-                    // 存快照而非下标：话术库改动后，历史记录仍显示当时那句话
+                    // 存快照而非引用：话术库改动后，历史记录仍显示当时那句话
                     phrase = o.getString("phrase"),
                     done = o.getBoolean("done"),
                 )
@@ -140,6 +200,10 @@ class AppStore(context: Context) {
         const val KEY_PLAN = "plan"
         const val KEY_RECENT = "recent_phrases"
         const val KEY_HISTORY = "history"
+        const val KEY_SCHEMA = "schema_version"
+
+        /** 2 = 话术以原文存储（1 = 以下标存储）。 */
+        const val SCHEMA_VERSION = 2
 
         const val RECENT_KEEP = 20
         const val HISTORY_KEEP = 52

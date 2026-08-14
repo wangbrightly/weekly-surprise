@@ -89,11 +89,20 @@ class ReminderCoordinatorTest {
     }
 
     @Test
-    fun 事件时间用设置里的小时() {
+    fun 事件时间精确到分而不只是小时() {
         val gateway = FakeCalendarGateway()
         val custom = Settings(hourOfDay = 21)
         coordinator(gateway).topUp(calendarId, today, custom, Random(10))
 
-        assertTrue("事件小时应当全部是 21", gateway.written.all { it.hourOfDay == 21 })
+        // 断言完整时间而不只是小时。真机上曾出过"只传小时、分钟被丢掉"的 bug：
+        // 正式提醒都在整点，所以丢分钟毫无症状；只有调试用的"几分钟后"提醒会
+        // 被写到已经过去的整点，永远不会响。这里连分钟一起断言，堵住这条路。
+        gateway.written.forEach { event ->
+            assertEquals(
+                "写入时间与预期不符",
+                event.date.atTime(21, 0),
+                event.at,
+            )
+        }
     }
 }

@@ -2,4 +2,26 @@
 <resources>
     <color name="ic_launcher_background">#FFF3F0</color>
     <color name="heart">#E86A6A</color>
+
+    <!-- 浅色：暖玫瑰调，围绕图标的心形色展开 -->
+    <color name="primary">#B4413E</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#FFDAD6</color>
+    <color name="on_primary_container">#410004</color>
+
+    <color name="secondary">#775653</color>
+    <color name="on_secondary">#FFFFFF</color>
+    <color name="secondary_container">#FFDAD6</color>
+    <color name="on_secondary_container">#2C1513</color>
+
+    <color name="background">#FFF8F7</color>
+    <color name="on_background">#201A1A</color>
+    <color name="surface">#FFF8F7</color>
+    <color name="on_surface">#201A1A</color>
+    <color name="surface_variant">#F5DDDA</color>
+    <color name="on_surface_variant">#534341</color>
+    <color name="outline">#857371</color>
+
+    <color name="error">#BA1A1A</color>
+    <color name="on_error">#FFFFFF</color>
 </resources>

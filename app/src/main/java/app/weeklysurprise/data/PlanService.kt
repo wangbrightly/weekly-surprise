@@ -31,7 +31,7 @@ class PlanService(
             HistoryEntry(
                 date = it.date,
                 amountYuan = it.amountYuan,
-                phrase = phraseOf(it),
+                phrase = it.phrase,
                 done = false,
             )
         }
@@ -51,12 +51,12 @@ class PlanService(
         val created = ReminderFactory.create(
             dates = newDates,
             settings = settings,
-            librarySize = store.phrases.size,
+            phrases = store.enabledPhrases,
             recentPhrases = store.recentPhrases,
             random = random,
         )
         store.plan = (store.plan + created).sortedBy { it.date }
-        store.recentPhrases = store.recentPhrases + created.map { it.phraseIndex }
+        store.recentPhrases = store.recentPhrases + created.map { it.phrase }
         return created.size
     }
 
@@ -86,19 +86,13 @@ class PlanService(
 
     fun futureCount(today: LocalDate): Int = store.plan.count { !it.date.isBefore(today) }
 
-    /** 取话术原文。下标越界时退回第一条，避免用户删话术后崩溃。 */
-    fun phraseOf(reminder: Reminder): String {
-        val list = store.phrases
-        return list.getOrElse(reminder.phraseIndex) { list.firstOrNull().orEmpty() }
-    }
-
     /** 标记某天已完成，并写入历史。 */
     fun markDone(date: LocalDate) {
         val reminder = reminderOn(date) ?: return
         val entry = HistoryEntry(
             date = date,
             amountYuan = reminder.amountYuan,
-            phrase = phraseOf(reminder),
+            phrase = reminder.phrase,
             done = true,
         )
         store.history = (store.history.filter { it.date != date } + entry).sortedBy { it.date }

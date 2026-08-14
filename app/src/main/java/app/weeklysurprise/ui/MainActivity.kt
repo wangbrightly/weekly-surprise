@@ -7,7 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.widget.TextView
+import android.view.LayoutInflater
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -19,6 +19,7 @@ import app.weeklysurprise.core.ReminderCoordinator
 import app.weeklysurprise.data.AppStore
 import app.weeklysurprise.data.PlanService
 import app.weeklysurprise.databinding.ActivityMainBinding
+import app.weeklysurprise.databinding.ItemHistoryBinding
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -32,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private var revealed = false
 
     private val dateFormat = DateTimeFormatter.ofPattern("M 月 d 日 EEEE")
+    private val historyFormat = DateTimeFormatter.ofPattern("M 月 d 日")
 
     private val requestCalendar = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -45,6 +47,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.applySystemBarInsets()
 
         store = AppStore(this)
         gateway = AndroidCalendarGateway(this, ReminderCoordinator.EVENT_TITLE)
@@ -145,7 +148,7 @@ class MainActivity : AppCompatActivity() {
 
         if (isToday && revealed) {
             binding.amountText.text = getString(R.string.amount_format, todayReminder.amountYuan)
-            binding.phraseText.text = plans.phraseOf(todayReminder)
+            binding.phraseText.text = todayReminder.phrase
         }
 
         val next = plans.nextReminder(today)
@@ -159,22 +162,18 @@ class MainActivity : AppCompatActivity() {
         binding.historyContainer.removeAllViews()
         val recent = store.history.sortedByDescending { it.date }.take(8)
 
-        if (recent.isEmpty()) {
-            binding.historyContainer.addView(makeRow(getString(R.string.history_empty)))
-            return
-        }
-        recent.forEach { entry ->
-            val status = getString(if (entry.done) R.string.done_yes else R.string.done_no)
-            binding.historyContainer.addView(
-                makeRow(getString(R.string.history_row, entry.date.toString(), entry.amountYuan, status)),
-            )
-        }
-    }
+        binding.historyEmpty.visibility =
+            if (recent.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+        if (recent.isEmpty()) return
 
-    private fun makeRow(text: String): TextView = TextView(this).apply {
-        this.text = text
-        textSize = 14f
-        setPadding(0, 8, 0, 8)
+        val inflater = LayoutInflater.from(this)
+        recent.forEach { entry ->
+            val row = ItemHistoryBinding.inflate(inflater, binding.historyContainer, false)
+            row.rowDate.text = entry.date.format(historyFormat)
+            row.rowAmount.text = getString(R.string.amount_format, entry.amountYuan)
+            row.rowStatus.text = getString(if (entry.done) R.string.done_yes else R.string.done_no)
+            binding.historyContainer.addView(row.root)
+        }
     }
 
     // ---------- 动作 ----------
@@ -194,7 +193,7 @@ class MainActivity : AppCompatActivity() {
     private fun copyPhrase() {
         val reminder = plans.reminderOn(LocalDate.now()) ?: return
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("phrase", plans.phraseOf(reminder)))
+        clipboard.setPrimaryClip(ClipData.newPlainText("phrase", reminder.phrase))
         Toast.makeText(this, R.string.copied, Toast.LENGTH_SHORT).show()
     }
 
@@ -220,19 +219,19 @@ class MainActivity : AppCompatActivity() {
 
         // 走与真实提醒完全相同的写入路径，只是时间设成 2 分钟后。
         // 不用"直接弹通知"的捷径 —— 那样验证不到日历这条链路。
-        val now = java.time.LocalDateTime.now().plusMinutes(2)
-        AlertDialog.Builder(this)
-            .setMessage(R.string.test_reminder_written)
-            .setPositiveButton(R.string.confirm, null)
-            .show()
+        val at = java.time.LocalDateTime.now().plusMinutes(2)
 
         gateway.insertReminder(
             calendarId = calendarId,
-            date = now.toLocalDate(),
-            hourOfDay = now.hour,
+            at = at,
             title = ReminderCoordinator.EVENT_TITLE,
             description = ReminderCoordinator.EVENT_DESCRIPTION,
         )
+
+        AlertDialog.Builder(this)
+            .setMessage(getString(R.string.test_reminder_at, at.hour, at.minute))
+            .setPositiveButton(R.string.confirm, null)
+            .show()
     }
 
     private companion object {

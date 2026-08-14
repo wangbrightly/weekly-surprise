@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 深色：同一套色相，降低亮度提高对比，夜里看不刺眼 -->
+    <color name="primary">#FFB4AB</color>
+    <color name="on_primary">#690006</color>
+    <color name="primary_container">#93000C</color>
+    <color name="on_primary_container">#FFDAD6</color>
+
+    <color name="secondary">#E7BDB8</color>
+    <color name="on_secondary">#442927</color>
+    <color name="secondary_container">#5D3F3C</color>
+    <color name="on_secondary_container">#FFDAD6</color>
+
+    <color name="background">#1A1110</color>
+    <color name="on_background">#EDE0DE</color>
+    <color name="surface">#1A1110</color>
+    <color name="on_surface">#EDE0DE</color>
+    <color name="surface_variant">#534341</color>
+    <color name="on_surface_variant">#D8C2BF</color>
+    <color name="outline">#A08C8A</color>
+
+    <color name="error">#FFB4AB</color>
+    <color name="on_error">#690005</color>
+</resources>

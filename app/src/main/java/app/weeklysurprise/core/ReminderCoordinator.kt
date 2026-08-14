@@ -57,8 +57,7 @@ class ReminderCoordinator(
         toWrite.forEach { date ->
             gateway.insertReminder(
                 calendarId = calendarId,
-                date = date,
-                hourOfDay = settings.hourOfDay,
+                at = date.atTime(settings.hourOfDay, 0),
                 title = EVENT_TITLE,
                 description = EVENT_DESCRIPTION,
             )

@@ -3,11 +3,15 @@ package app.weeklysurprise.core
 import app.weeklysurprise.calendar.CalendarGateway
 import app.weeklysurprise.calendar.LocalCalendar
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /** 内存里的假日历，用于在电脑上完整测试补足流程，不需要真机。 */
 class FakeCalendarGateway : CalendarGateway {
 
-    data class Written(val date: LocalDate, val hourOfDay: Int, val title: String, val description: String)
+    data class Written(val at: LocalDateTime, val title: String, val description: String) {
+        val date: LocalDate get() = at.toLocalDate()
+        val hourOfDay: Int get() = at.hour
+    }
 
     val written = mutableListOf<Written>()
 
@@ -22,12 +26,11 @@ class FakeCalendarGateway : CalendarGateway {
 
     override fun insertReminder(
         calendarId: Long,
-        date: LocalDate,
-        hourOfDay: Int,
+        at: LocalDateTime,
         title: String,
         description: String,
     ) {
-        written += Written(date, hourOfDay, title, description)
+        written += Written(at, title, description)
     }
 
     override fun deleteRemindersAfter(calendarId: Long, from: LocalDate): Int {

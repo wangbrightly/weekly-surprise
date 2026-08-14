@@ -129,12 +129,11 @@ class AndroidCalendarGateway(
 
     override fun insertReminder(
         calendarId: Long,
-        date: LocalDate,
-        hourOfDay: Int,
+        at: java.time.LocalDateTime,
         title: String,
         description: String,
     ) {
-        val start = date.atTime(hourOfDay, 0).atZone(zone).toInstant().toEpochMilli()
+        val start = at.atZone(zone).toInstant().toEpochMilli()
         val end = start + EVENT_DURATION_MILLIS
 
         val values = ContentValues().apply {

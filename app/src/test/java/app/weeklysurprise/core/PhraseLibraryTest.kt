@@ -16,10 +16,9 @@ class PhraseLibraryTest {
     @Test
     fun 内置库容量足够支撑不重复窗口() {
         val size = Phrases.BUILT_IN.size
-        val minimum = PhrasePicker.NO_REPEAT_WINDOW * 3
         assertTrue(
-            "内置话术只有 $size 条，少于安全下限 $minimum 条（不重复窗口的 3 倍）",
-            size >= minimum,
+            "内置话术只有 $size 条，少于安全下限 ${PhrasePicker.SAFE_MINIMUM} 条（不重复窗口的 3 倍）",
+            size >= PhrasePicker.SAFE_MINIMUM,
         )
     }
 
@@ -39,12 +38,12 @@ class PhraseLibraryTest {
     @Test
     fun 用真实库跑一遍不重复约束() {
         val random = Random(11)
-        val history = mutableListOf<Int>()
+        val history = mutableListOf<String>()
         repeat(200) {
-            val index = PhrasePicker.pick(Phrases.BUILT_IN.size, history, random)
+            val picked = PhrasePicker.pick(Phrases.BUILT_IN, history, random)
             val window = history.takeLast(PhrasePicker.NO_REPEAT_WINDOW - 1)
-            assertTrue("第 ${history.size + 1} 次抽到重复", index !in window)
-            history += index
+            assertTrue("第 ${history.size + 1} 次抽到重复", picked !in window)
+            history += picked
         }
     }
 }

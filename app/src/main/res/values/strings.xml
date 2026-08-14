@@ -37,11 +37,26 @@
     <string name="reminder_hour">提醒时间（几点）</string>
     <string name="lucky_digits">偏好吉利数字（尾数 6 或 8，避开 4）</string>
     <string name="phrases_title">话术库（一行一句）</string>
+    <string name="phrases_title_short">话术库</string>
     <string name="phrases_hint">删到 24 条以下会失去随机性，建议只增不减</string>
+    <string name="phrases_entry">管理话术库</string>
+    <string name="phrases_entry_hint">共 %1$d 条，已启用 %2$d 条</string>
+
+    <string name="phrase_add">新增</string>
+    <string name="phrase_edit">修改</string>
+    <string name="phrase_summary">共 %1$d 条，参与随机 %2$d 条</string>
+    <string name="phrase_enabled_desc">是否参与随机</string>
+    <string name="phrase_delete_desc">删除这一条</string>
+    <string name="phrase_delete_confirm">删除这一条？\n\n「%1$s」</string>
+    <string name="phrase_duplicate">这句已经在库里了</string>
+    <string name="phrase_empty">内容不能为空</string>
+    <string name="phrase_too_few">参与随机的话术至少要 %1$d 条，否则会变成固定轮播。请启用或新增几条。</string>
+    <string name="phrase_below_safe">参与随机的少于 %1$d 条，重复感会比较明显。建议再多留几条。</string>
     <string name="save">保存</string>
     <string name="saved">已保存</string>
     <string name="save_failed">保存失败：%1$s</string>
 
+    <string name="danger_zone">谨慎操作</string>
     <string name="rebuild_plan">按新设置重排未来</string>
     <string name="rebuild_done">已重排</string>
     <string name="clear_events">清空本应用创建的日历事件</string>
@@ -52,5 +67,6 @@
 
     <string name="test_reminder">写入一条 2 分钟后的测试提醒</string>
     <string name="test_reminder_written">已写入，2 分钟后看系统日历是否响铃</string>
+    <string name="test_reminder_at">已写入一条 %1$02d:%2$02d 的测试提醒。到点看系统日历是否响铃。</string>
     <string name="calendar_notice_hint">如果到点没响，检查系统「日历」应用的通知是否被关闭。</string>
 </resources>

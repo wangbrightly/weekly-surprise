@@ -15,23 +15,24 @@ import kotlin.random.Random
 object ReminderFactory {
 
     /**
-     * @param recentPhrases 之前已用过的话术下标（按时间先后），用于跨批次维持不重复
+     * @param phrases 当前可用的话术原文（调用方负责剔除已停用的）
+     * @param recentPhrases 之前已用过的话术原文（按时间先后），用于跨批次维持不重复
      */
     fun create(
         dates: List<LocalDate>,
         settings: Settings,
-        librarySize: Int,
-        recentPhrases: List<Int>,
+        phrases: List<String>,
+        recentPhrases: List<String>,
         random: Random,
     ): List<Reminder> {
         val history = recentPhrases.toMutableList()
         return dates.map { date ->
-            val phraseIndex = PhrasePicker.pick(librarySize, history, random)
-            history += phraseIndex
+            val phrase = PhrasePicker.pick(phrases, history, random)
+            history += phrase
             Reminder(
                 date = date,
                 amountYuan = AmountPicker.pick(settings, random),
-                phraseIndex = phraseIndex,
+                phrase = phrase,
             )
         }
     }

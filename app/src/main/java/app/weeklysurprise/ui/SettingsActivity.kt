@@ -24,6 +24,7 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.applySystemBarInsets()
         title = getString(R.string.settings)
 
         store = AppStore(this)
@@ -34,6 +35,15 @@ class SettingsActivity : AppCompatActivity() {
         binding.saveButton.setOnClickListener { save() }
         binding.rebuildButton.setOnClickListener { rebuild() }
         binding.clearButton.setOnClickListener { confirmClear() }
+        binding.phrasesButton.setOnClickListener {
+            startActivity(android.content.Intent(this, PhrasesActivity::class.java))
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 从话术库页返回时刷新统计
+        renderPhraseSummary()
     }
 
     private fun load() {
@@ -42,7 +52,13 @@ class SettingsActivity : AppCompatActivity() {
         binding.maxAmountInput.setText(s.maxAmount.toString())
         binding.hourInput.setText(s.hourOfDay.toString())
         binding.luckyCheck.isChecked = s.preferLuckyDigits
-        binding.phrasesInput.setText(store.phrases.joinToString("\n"))
+        renderPhraseSummary()
+    }
+
+    private fun renderPhraseSummary() {
+        val all = store.phrases
+        binding.phrasesSummary.text =
+            getString(R.string.phrases_entry_hint, all.size, all.count { it.enabled })
     }
 
     private fun save() {
@@ -50,13 +66,7 @@ class SettingsActivity : AppCompatActivity() {
         val max = binding.maxAmountInput.text.toString().toIntOrNull()
         val hour = binding.hourInput.text.toString().toIntOrNull()
 
-        val phrases = binding.phrasesInput.text.toString()
-            .split("\n")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .distinct()
-
-        val error = validate(min, max, hour, phrases.size)
+        val error = validate(min, max, hour)
         if (error != null) {
             Toast.makeText(this, getString(R.string.save_failed, error), Toast.LENGTH_LONG).show()
             return
@@ -68,18 +78,15 @@ class SettingsActivity : AppCompatActivity() {
             preferLuckyDigits = binding.luckyCheck.isChecked,
             hourOfDay = hour!!,
         )
-        store.phrases = phrases
         Toast.makeText(this, R.string.saved, Toast.LENGTH_SHORT).show()
     }
 
     /** 在入口处挡住非法输入，而不是让它到深处才炸。 */
-    private fun validate(min: Int?, max: Int?, hour: Int?, phraseCount: Int): String? = when {
+    private fun validate(min: Int?, max: Int?, hour: Int?): String? = when {
         min == null || max == null || hour == null -> "有输入不是数字"
         min < 1 -> "最低金额要大于 0"
         min > max -> "最低金额不能大于最高金额"
         hour !in 0..23 -> "小时要在 0 到 23 之间"
-        phraseCount <= PhrasePicker.NO_REPEAT_WINDOW ->
-            "话术至少要 ${PhrasePicker.NO_REPEAT_WINDOW + 1} 条，否则会变成固定轮播"
         else -> null
     }
 

@@ -1,6 +1,7 @@
 package app.weeklysurprise.calendar
 
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * 日历读写的抽象。
@@ -25,8 +26,20 @@ interface CalendarGateway {
     /** 查询本应用已写入的、指定日期之后的全部事件日期。 */
     fun existingReminderDates(calendarId: Long, from: LocalDate): Set<LocalDate>
 
-    /** 写入一条提醒事件。标题中性，不含金额与话术。 */
-    fun insertReminder(calendarId: Long, date: LocalDate, hourOfDay: Int, title: String, description: String)
+    /**
+     * 写入一条提醒事件。标题中性，不含金额与话术。
+     *
+     * 时间参数刻意用完整的 [LocalDateTime] 而不是拆成"日期 + 小时"：
+     * 早期版本正是拆开传的，调用方漏传分钟，把 17:13 的测试提醒写成了 17:00
+     * （已经过去的时间，永远不会响）。正式提醒都在整点，所以这个缺陷藏得很深。
+     * 现在时间只能整个传进来，漏传分钟这件事在类型上就做不到了。
+     */
+    fun insertReminder(
+        calendarId: Long,
+        at: LocalDateTime,
+        title: String,
+        description: String,
+    )
 
     /** 删除本应用创建的、指定日期之后的全部事件；不得触碰用户自己的日程。返回删除条数。 */
     fun deleteRemindersAfter(calendarId: Long, from: LocalDate): Int
