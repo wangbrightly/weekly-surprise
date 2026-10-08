@@ -65,4 +65,11 @@
     <string name="test_reminder">写入一条 2 分钟后的测试提醒</string>
     <string name="test_reminder_at">已写入一条 %1$02d:%2$02d 的测试提醒。到点看系统日历是否响铃。</string>
     <string name="calendar_notice_hint">如果到点没响，检查系统「日历」应用的通知是否被关闭。</string>
+    <string name="donate_entry">☕ 赞赏作者</string>
+    <string name="donate_title">喜欢这个 App？请作者喝杯咖啡</string>
+    <string name="donate_save">保存到相册</string>
+    <string name="donate_close">关闭</string>
+    <string name="donate_saved">已保存到相册，打开微信「扫一扫」→ 相册，选这张图即可</string>
+    <string name="donate_save_failed">保存失败，请直接截图后用微信扫一扫识别</string>
+    <string name="donate_save_old_android">请直接截图，再用微信扫一扫 → 相册识别</string>
 </resources>

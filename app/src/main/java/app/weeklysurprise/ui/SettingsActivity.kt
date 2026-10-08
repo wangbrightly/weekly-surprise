@@ -35,6 +35,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.saveButton.setOnClickListener { save() }
         binding.rebuildButton.setOnClickListener { rebuild() }
         binding.clearButton.setOnClickListener { confirmClear() }
+        binding.donateButton.setOnClickListener { DonateDialog.show(this) }
         binding.phrasesButton.setOnClickListener {
             startActivity(android.content.Intent(this, PhrasesActivity::class.java))
         }
